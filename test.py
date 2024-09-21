@@ -1,6 +1,7 @@
 from restaurant import *
 
 
+
 if __name__ == "__main__":
     
 
@@ -9,25 +10,32 @@ if __name__ == "__main__":
     water = Beverage(name="Water", price=1000, alcohol=False)
 
 
-    empanada = Appetizer(name="Lemonade", price=1500, origin="Colombia")
-    arepa = Appetizer(name="Lemonade", price=2200, origin="Venezuela")
+    empanada = Appetizer(name="Empanada", price=1500, origin="Colombia")
+    arepa = Appetizer(name="Arepa", price=2200, origin="Venezuela")
     
 
 
     chinese_rise = MainCourse(name="Chinese rise", price=20000, vegan=False)
     hamburger = MainCourse(name="Hamburger", price=25000, vegan=False)
-    vegan_hamburger = MainCourse(name="Vegan_hambuerger", price=30000, vegan=True)
+    vegan_hamburger = MainCourse(name="Vegan hambuerger", price=30000, vegan=True)
 
 
 
-    ice_cream = Dessert(name="orange ice cream", price=3000, kind="Ice Cream")
-    candys = Dessert(name="sweet mind", price=500, kind="Candy")
+    ice_cream = Dessert(name="Orange ice cream", price=3000, kind="Ice Cream")
+    candys = Dessert(name="Sweet mind", price=500, kind="Candy")
     cake = Dessert(name="Banana Cake", price=4500, kind="Cake")
 
-    print("Menu")
-    print("lemonade, water, beer, empanada, arepa, chinese rise, hamburger, vegan hamburger, Banana Cake, sweet mind, orange ice cream\n")
 
-    print("So, you want a cake, a empanada, a water and a hamburger\n")
+
+
+    Menu = {"lemonade":lemonade, "water":water, "beer":beer, "empanada":empanada, "arepa":arepa, "chinese rise":chinese_rise, "hamburger":hamburger, "vegan hamburger":vegan_hamburger, "orange ice cream":ice_cream, "Banana Cake":cake, "sweet mind":candys}
+
+
+
+    print("Menu")
+    print("lemonade, water, beer, empanada, arepa, chinese rise, hamburger, vegan hamburger, Banana Cake, sweet mind, orange ice cream")
+
+    print("So, you want a cake, a empanada, a water and a hamburger")
 
     First_order: Order = Order([cake, empanada, water, hamburger])
 
@@ -66,6 +74,11 @@ if __name__ == "__main__":
         else:
             mores_food = False
         
+
+
+
+
+
 
     First_order.add_items(new_food=new_food)
         
