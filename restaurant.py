@@ -9,7 +9,7 @@ class MenuItem:
         return self.__name
     
     @name.setter
-    def name(self, new_name) -> None:
+    def name(self, new_name: str) -> None:
         if new_name:
             self.__name = new_name
 
@@ -18,7 +18,7 @@ class MenuItem:
         return self.__price
     
     @price.setter
-    def price(self, new_price) -> None:
+    def price(self, new_price: float) -> None:
         if new_price:
             self.__price = new_price
 
@@ -27,24 +27,22 @@ class MenuItem:
         return self.__quantity
     
     @quantity.setter
-    def quantity(self, new_quantity)-> None:
-        if new_quantity:
-            self.__quantity = new_quantity
+    def quantity(self, new_quantity: int) -> None:
+        if new_quantity < 0 and isinstance(new_quantity, int):
+            raise ValueError("Quantity cannot be negative")
+        self.__quantity = new_quantity
 
     def __str__(self):
-        return f"Food: {self.__name}, price {self.__price}, quantity {self.__quantity}"
+        return f"Food: {self.__name}, price : {self.__price}"
 
     def add_quantity(self, new_quantity: float)-> None:
-        if new_quantity < 0:
-            raise ValueError("You can't order a quantity of food =< 0 ")
         self.quantity += new_quantity
 
 
     def subtract_quantity(self, new_quantity : float)-> None:
         if new_quantity > self.quantity:
-            raise ValueError("You can't order a quantity of food < 0 ")
+            raise ValueError("You can't order a quantity of food < 0")
         self.quantity -= new_quantity
-    
 
 class Beverage(MenuItem):
     def __init__(self, name: str, price: float, alcohol: bool, quantity: int = 0):
@@ -104,79 +102,132 @@ class Dessert(MenuItem):
 class Order:
     def __init__(self, Menu_items: "RegisterOrder"):
         self.__Menu_items: "RegisterOrder" = Menu_items
+        self.__tip: float = 0
+        self.__discounts:str = 0
         self.__total_bill: float = 0
-
     @property
-    def total_bill(self):
+    def total_bill(self) -> float:
         return self.__total_bill
     
     @total_bill.setter
     def total_bill(self, new_bill):
         if new_bill:
             self.__total_bill = new_bill
-    
 
-    def add_items(self, new_food: MenuItem, new_food_quantity: float):
+
+    @property
+    def tip(self) -> float:
+        return self.__tip
+    
+    @tip.setter
+    def tip(self, new_tip):
+        if new_tip:
+            self.__tip = new_tip
+
+    @property
+    def discounts(self) -> float:
+        return self.__discounts
+    
+    @discounts.setter
+    def discounts(self, new_discounts):
+        if new_discounts:
+            self.__discounts = new_discounts
+    
+    def add_items(self, new_food: MenuItem, new_food_quantity: float) -> None:
         if not isinstance(new_food, MenuItem):
             raise TypeError("You should order a MenuItem")
-        new_food: MenuItem = new_food
         if new_food in self.__Menu_items:
             item_index: int = self.__Menu_items.order_item_index(new_food)
             self.__Menu_items[item_index].add_quantity(new_food_quantity)
         else:
+            new_food.add_quantity(new_quantity=new_food_quantity)
             self.__Menu_items.add_item(new_food)
+            
 
-
-    def remove_items(self, new_food: MenuItem, new_food_quantity: float):
+    def remove_items(self, new_food: MenuItem, new_food_quantity: float) -> None:
         if not isinstance(new_food, MenuItem):
             raise TypeError("You should order a MenuItem")
         new_food: MenuItem = new_food
         if new_food in self.__Menu_items:
             item_index: int = self.__Menu_items.order_item_index(new_food)
             self.__Menu_items[item_index].subtract_quantity(new_food_quantity)
+            if new_food.quantity == 0:
+                self.__Menu_items.remove_item(new_food)
+
         else:
             raise ValueError(f"You have not order {new_food}, how could you remove this from your order?")
 
 
+    def calculate_total_cost(self) -> float:
+        total_money: int = 0
+        for item in self.__Menu_items:
+            total_money += (item.price *item.quantity)
+        return total_money
 
 
-    def calculate_total_bill(self):
-        total_money = []
-        for i in self.__Menu_items:
-            total_money.append(i.get_price())
-        return sum(total_money)
+    def calculate_discounts(self) -> float:
+        total_discount = self.calculate_total_cost()
+        total_price = self.calculate_total_cost()
 
-
-    def calculate_discounts(self):
-        total_discount = self.calculate_total_bill()
-        total_price = self.calculate_total_bill()
-        
         has_appetizer = any(isinstance(item, Appetizer) for item in self.__Menu_items)
 
         has_dessert = any(isinstance(item, Dessert) for item in self.__Menu_items)
 
         has_beverage = any(isinstance(item, Beverage) for item in self.__Menu_items)
 
+
         if has_appetizer:
             total_discount = (total_discount - total_price*0.025)
-        
+            self.discounts += total_price*0.025
+
         if has_dessert:
             total_discount = (total_discount - total_price*0.05)
+            self.discounts += total_price*0.05
 
         if has_beverage:
             total_discount = (total_discount - total_price*0.035)
-        
-        return(round(total_discount, 2))
+            self.discounts += total_price*0.035
+
+        return (round(total_discount, 2))
     
 
+    def apply_tip(self, tip_bool: bool = False) -> None:
+        total: float = self.calculate_discounts()
+        if tip_bool:
+            self.tip: float = (total*10)/100
+        else:
+            self.tip: float = 0
+        
+
+    def calculate_total_bill(self, tip_bool: bool = False) -> None:
+        total: float = self.calculate_discounts()
+        self.apply_tip(tip_bool)
+        total_bill:float = total + self.tip
+        self.total_bill = total_bill
+
+
+
+    def generate_order_details_food(self):
+        for food in self.__Menu_items:
+            yield f"food: {food.name}, price: {food.price}, quantity: {food.quantity}, total: {food.quantity*food.price}"
 
     def __str__(self):
-        print("Order:")
-        for food in self.__Menu_items:
-            yield f"food: {food.name}, price: {food.price}, quantity: {food.quantity}"
+        self.calculate_total_bill()
+        if len(self.__Menu_items) == 0:
+            return "You have not order anything"
+        else:
+            order_details = "Order:\n"
+            for food in self.generate_order_details_food():
+                order_details += food + "\n"
+            
+            if self.discounts != 0:
+                order_details += f"Discount: {self.discounts}\n"
 
-        print(self.__total_bill)
 
+            if self.tip != 0:
+                            order_details += f"Tip of 10%: {self.tip}\n"
+            order_details += f"Total bill: {self.total_bill}\n"
+            return order_details
 
 
 
@@ -189,10 +240,16 @@ class RegisterOrder:
         self.menu_items.append(item)
 
     def order_item_index(self, item):
-        self.menu_items.index(item)
+        return self.menu_items.index(item)
 
     def remove_item(self, item: MenuItem) -> None:
         self.menu_items.remove(item)
+
+    def __getitem__(self, index: int) -> MenuItem:
+        return self.menu_items[index]
+
+    def __len__(self) -> int:
+        return len(self.menu_items)
 
     def __iter__(self):
         return RegisterOrderIterator(self.menu_items)
@@ -209,6 +266,7 @@ class RegisterOrderIterator:
     def __next__(self):
         if self.index < len(self.menu_items):
             item = self.menu_items[self.index]
+            self.index += 1
             return item
         else:
             raise StopIteration
@@ -225,142 +283,21 @@ class Payment_method:
 class Credit_card(Payment_method):
   def __init__(self, number, cvv):
     super().__init__()
-    self.number = number
-    self.cvv = cvv
+    self.number: str = number
+    self.cvv: str = cvv
 
-  def pagar(self, money):
+  def pagar(self, money) -> None:
 
     print(f"Paying {money} with credit card {self.number[-4:]}")
 
 class Cash(Payment_method):
   def __init__(self, money_payed):
     super().__init__()
-    self.money_payed = money_payed
+    self.money_payed: float = money_payed
 
-  def pagar(self, money):
+  def pagar(self, money) -> None:
 
     if self.money_payed >= money:
       print(f"Sucessfully payment. Exchange: {self.money_payed - money}")
     else:
       print(f"Sorry, you will have to wash the dishes. Missing {money - self.money_payed} for completing the payment .")
-
-
-if __name__ == "__main__":
-    
-
-    lemonade = Beverage(name="Lemonade", price=2000, alcohol=False)
-    beer = Beverage(name="Beer", price=3000, alcohol=False)
-    water = Beverage(name="Water", price=1000, alcohol=False)
-
-
-    empanada = Appetizer(name="Empanada", price=1500, origin="Colombia")
-    arepa = Appetizer(name="Arepa", price=2200, origin="Venezuela")
-    
-
-
-    chinese_rise = MainCourse(name="Chinese rise", price=20000, vegan=False)
-    hamburger = MainCourse(name="Hamburger", price=25000, vegan=False)
-    vegan_hamburger = MainCourse(name="Vegan hambuerger", price=30000, vegan=True)
-
-
-
-    ice_cream = Dessert(name="Orange ice cream", price=3000, kind="Ice Cream")
-    candys = Dessert(name="Sweet mind", price=500, kind="Candy")
-    cake = Dessert(name="Banana Cake", price=4500, kind="Cake")
-
-
-
-
-    Menu = {"lemonade":lemonade, "water":water, "beer":beer, "empanada":empanada, "arepa":arepa, "chinese rise":chinese_rise, "hamburger":hamburger, "vegan hamburger":vegan_hamburger, "orange ice cream":ice_cream, "Banana Cake":cake, "sweet mind":candys}
-
-
-
-    print("Menu")
-    print("lemonade, water, beer, empanada, arepa, chinese rise, hamburger, vegan hamburger, Banana Cake, sweet mind, orange ice cream")
-
-    print("So, you want a cake, a empanada, a water and a hamburger")
-
-    First_order: Order = Order([cake, empanada, water, hamburger])
-
-    start = True
-    new_food = []
-    while start or mores_food:
-        start = False
-        more_food: str = input("Would you like more food, yes or no?\n" )
-        if more_food == "yes":
-            mores_food = True
-            food = input("Which one?: ")
-            match food:
-                case "lemonade": 
-                    wished_food = lemonade
-                case "beer":
-                    wished_food = beer
-                case "water":
-                    wished_food= water
-                case "arepa": 
-                    wished_food = arepa
-                case "empanada":
-                    wished_food = empanada
-                case "chinise rise":
-                    wished_food= chinese_rise
-                case "hamburger": 
-                    wished_food = hamburger
-                case "vegan hamburger":
-                    wished_food = vegan_hamburger
-                case "orange ice cream":
-                    wished_food= ice_cream
-                case "Banana Cake":
-                    wished_food = cake
-                case "sweet mind":
-                    wished_food= candys
-            new_food.append(wished_food)
-        else:
-            mores_food = False
-        
-
-
-
-
-
-
-    First_order.add_items(new_food=new_food)
-        
-    print("Your bill without discount is: ",First_order.calculate_total_bill())
-    print("your bill with discounts is: ", First_order.calculate_discounts())
-
-
-    start_pay: bool = True
-    attems: int  = 0
-    while finish_pay or start_pay:
-        finish_pay: bool = True
-        print("This will be the two methods on payment: ")
-        payment = input("Enter credit card or efective:\n")
-        match payment:
-            case "credit card":
-                fuc: bool = True
-                credit_card: str = input("Enter your credit card number:\n")
-                cvv: str = input("Enter the password:\n")
-                if len(credit_card) != 13:
-                    print("This is not the number of a credit card")
-                    fuc: bool = False
-                if len(cvv) != 3:
-                    print("This is not the cvv")
-                    fuc: bool = False
-                if fuc:
-                    cvv: int = int(cvv)
-                    pay_credit_card = Credit_card(number=credit_card, cvv=cvv)
-                    pay_credit_card.pagar(First_order.calculate_discounts())
-                    finish_pay: bool = False
-                    
-            case "efective":
-                money_have: int = int(input("How much money do you have?:\n"))
-                pay_efective = Cash(money_payed=money_have)
-                pay_efective.pagar(First_order.calculate_discounts())
-                finish_pay: bool = False
-            case _:
-                print("Invalid payment method")
-        
-        attems += 1
-        if attems == 5:
-            print("I will call the police")
-        
